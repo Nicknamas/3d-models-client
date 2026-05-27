@@ -1,11 +1,9 @@
 <script lang="ts" setup>
-import { ref, useId } from 'vue';
+import axios from 'axios';
+import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 
 const router = useRouter()
-
-const emailId = useId();
-const passwordId = useId();
 
 const email = ref('');
 const password = ref('');
@@ -22,7 +20,17 @@ const handleSubmit = async () => {
   isLoading.value = true;
 
   try {
-    const response = await fakeLoginApi(email.value, password.value);
+    const data = {
+      username: email.value,
+      password: password.value
+    }
+
+    const response = await axios.post('http://localhost:5000/login', data);
+
+    const { access_token, refresh_token } = response.data
+
+    localStorage.setItem('accessToken', access_token)
+    localStorage.setItem('refreshToken', refresh_token)
 
     router.push({ name: 'Home' })
 
@@ -31,19 +39,7 @@ const handleSubmit = async () => {
   } finally {
     isLoading.value = false;
   }
-};
-
-const fakeLoginApi = (email, password) => {
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      if (email === 'admin@admin.com' && password === '123456') {
-        resolve({ token: 'fake-jwt-token-12345' });
-      } else {
-        reject(new Error('Неверные учетные данные'));
-      }
-    }, 1000);
-  });
-};
+}
 </script>
 
 <template>
@@ -53,22 +49,20 @@ const fakeLoginApi = (email, password) => {
 
       <form @submit.prevent="handleSubmit" :class="$style.form">
         <div :class="$style.field">
-          <label :for="emailId" :class="$style.label">Email</label>
+          <label :class="$style.label">Никнейм</label>
           <input
-            type="email"
-            :id="emailId"
+            type="username"
             v-model.trim="email"
-            placeholder="example@mail.com"
+            placeholder="some_funny_username"
             :class="[$style.input, error && !$style.inputError]"
             required
           />
         </div>
 
         <div :class="$style.field">
-          <label :for="passwordId" :class="$style.label">Пароль</label>
+          <label :class="$style.label">Пароль</label>
           <input
             type="password"
-            :id="passwordId"
             v-model="password"
             placeholder="••••••••"
             :class="$style.input"

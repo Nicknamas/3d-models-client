@@ -6,6 +6,12 @@ export const links = [
     routeDomain: 'home',
   },
   {
+    routeTo: 'Gallery',
+    label: 'Gallery',
+    iconName: 'profile',
+    routeDomain: 'gallery',
+  },
+  {
     routeTo: 'Profile',
     label: 'Profile',
     iconName: 'profile',
