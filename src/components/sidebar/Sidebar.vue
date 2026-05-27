@@ -3,6 +3,9 @@ import Icon from '@/components/icon'
 import NavigationLink from './ui/NavigationLink.vue'
 import { useExpandSidebar } from './model/useExpandSidebar'
 import { links } from '@/components/sidebar/model/constants'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
 
 interface Emit {
   updateSidebarStatus: [boolean]
@@ -12,6 +15,11 @@ const emit = defineEmits<Emit>()
 
 const isExpandSidebar = defineModel<boolean>({ default: false })
 const { toggleExpand } = useExpandSidebar(isExpandSidebar, emit)
+
+function logout(): void {
+  localStorage.clear()
+  router.push({ name: 'Login' })
+}
 </script>
 
 <template>
@@ -46,16 +54,16 @@ const { toggleExpand } = useExpandSidebar(isExpandSidebar, emit)
         :is-expand="isExpandSidebar"
       />
     </nav>
-    <RouterLink
-      :to="{ name: 'Home' }"
+    <div
       :class="$style.profile"
+      @click="logout"
     >
       <Icon
         :class="$style.avatar"
         name="avatar"
         size="24"
       />
-    </RouterLink>
+    </div>
   </aside>
 </template>
 

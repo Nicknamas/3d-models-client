@@ -1,3 +1,27 @@
+<script lang="ts" setup>
+import { decodeJWT } from '@/utils/jwt';
+import { useAxios } from '@/utils/useAxios';
+import { onBeforeMount, ref, watch } from 'vue';
+
+const axios = useAxios()
+
+const selfId = ref<string>('')
+
+const me = ref()
+
+watch(selfId, async () => {
+  if (selfId.value) {
+    const response = await axios.get(`/users/${selfId.value}`)
+    me.value = response.data
+  }
+})
+
+onBeforeMount(() => {
+  const accessToken = localStorage.getItem('accessToken')
+  selfId.value = decodeJWT(accessToken!).sub
+})
+</script>
+
 <template>
   <div :class="$style.container">
     <header :class="$style.profileCard">
@@ -10,7 +34,7 @@
       </div>
 
       <div :class="$style.profileInfo">
-        <h1 :class="$style.profileName">John Designer</h1>
+        <h1 :class="$style.profileName">{{ me?.username }}</h1>
         <p :class="$style.profileEmail">john@designer.com</p>
 
         <div :class="$style.statsGrid">
