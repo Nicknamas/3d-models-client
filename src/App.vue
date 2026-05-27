@@ -26,4 +26,14 @@ html, body, #app {
 a {
   text-decoration: none;
 }
+
+::-webkit-scrollbar {
+  background-color: linear-gradient(to right bottom in oklab, rgba(0, 212, 255, 0.05) 0%, rgba(138, 43, 226, 0.05) 100%);;
+  width: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--muted-foreground);
+  border-radius: 4px;
+}
 </style>

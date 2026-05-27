@@ -1,22 +1,73 @@
 <script setup lang="ts">
 import Icon from '@/components/icon';
+import { useAxios } from '@/utils/useAxios';
+import { computed, ref, watch } from 'vue';
+import { useRouter, useRoute } from 'vue-router'
 
+const axios = useAxios()
+const route = useRoute()
+const router = useRouter()
 
-const items = []
+const items = ref([])
+
+const userInput = ref<string>()
+
+const sessionIdFromRoute = computed(() => route.params.sessionId)
+
+async function postMessage(): Promise<void> {
+  if (!sessionIdFromRoute.value) {
+    const response = await axios.post('/sessions')
+    const sessionId = response.data.id
+    await router.push({ name: 'HomeWithSession', params: { sessionId } })
+  }
+
+  await axios.post('/messages', {
+    session_id: sessionIdFromRoute.value,
+    description: userInput.value
+  })
+
+  await updateItems()
+}
+
+async function updateItems() {
+  if (sessionIdFromRoute.value) {
+    const response = await axios.get('/messages')
+    items.value = response.data
+  }
+}
+
+watch(sessionIdFromRoute, updateItems, { immediate: true })
 </script>
 
 <template>
   <div :class="$style.page">
     <div :class="$style.card">
       <div
-        v-if="items.length"
         :class="$style.items"
       >
-        <div :class="$style.item"></div>
+        <div
+          v-for="item of items"
+          :key="item.id"
+          :class="$style.item"
+        >
+          <div :class="$style.userMessage">
+            <div :class="$style.circle"></div>
+            <p :class="$style.text">
+              {{ item.description }}
+            </p>
+          </div>
+          <div :class="$style.aiMessage">
+            <div :class="$style.circle"></div>
+            <a :class="$style.text">
+              some-file.txt
+            </a>
+          </div>
+        </div>
       </div>
       <div
-        v-else
-        :class="$style.logoContainer"
+        :class="
+          [$style.logoContainer, items.length ? $style.opacity : undefined]
+        "
       >
         <Icon
           name="big-logo"
@@ -28,11 +79,15 @@ const items = []
       :class="$style.inputBlock"
     >
       <input
+        v-model="userInput"
         :class="$style.input"
         placeholder="Опишите свою 3D-модель... (например, «Футуристический мотоцикл в стиле киберпанк с неоновыми огнями»)"
         type="text"
       />
-      <button :class="$style.button">
+      <button
+        :class="$style.button"
+        @click="postMessage"
+      >
         <Icon
           :class="$style.icon"
           name="logo"
@@ -50,14 +105,50 @@ const items = []
   gap: 20px;
   background-color: var(--sidebar);
   padding: 20px;
+  height: 100%;
 
   .card {
+    position: relative;
     border-radius: 12px;
     border: 1px solid var(--sidebar-border);
     background-image: linear-gradient(to right bottom in oklab, rgba(0, 212, 255, 0.05) 0%, rgba(138, 43, 226, 0.05) 100%);
     width: 100%;
     height: 100%;
     flex-grow: 2;
+    padding: 20px;
+    overflow-y: auto;
+
+    .items {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      justify-content: end;
+      gap: 12px;
+
+      .item {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        color: var(--colors-white);
+        font-size: 24px;
+
+        .userMessage, .aiMessage {
+          padding: 12px 16px;
+          border-radius: 12px;
+          background-color: var(--muted);
+          width: fit-content;
+        }
+
+        .userMessage {
+          text-align: right;
+          margin-left: auto;
+        }
+
+        .aiMessage {
+        }
+      }
+    }
   }
 
   .inputBlock {
@@ -87,15 +178,42 @@ const items = []
 }
 
 .logoContainer {
+  position: absolute;
+  inset: 0;
   display: grid;
   place-items: center;
   width: 100%;
   height: 100%;
+  transition: 0.2s;
 }
 
 .logo {
   width: 60%;
   animation: pulse 3s infinite ease-in-out;
+}
+
+.opacity {
+  opacity: 40%;
+
+  .logo {
+    width: 40%;
+    animation: pulse-mini 3s infinite ease-in-out;
+  }
+}
+
+@keyframes pulse-mini {
+  0% {
+    scale: 1.0;
+    translate: 0;
+  }
+  50% {
+    scale: 1.04;
+    translate: 0 -5px;
+  }
+  100% {
+    scale: 1;
+    translate: 0;
+  }
 }
 
 @keyframes pulse {

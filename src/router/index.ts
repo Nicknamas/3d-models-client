@@ -23,6 +23,11 @@ const router = createRouter({
               component: () => import('@/pages/Home.vue')
             },
             {
+              path: '/home/:sessionId',
+              name: 'HomeWithSession',
+              component: () => import('@/pages/Home.vue')
+            },
+            {
               path: '/gallery',
               name: 'Gallery',
               component: () => import('@/pages/Gallery.vue')
