@@ -90,7 +90,7 @@ const { toggleExpand } = useExpandSidebar(isExpandSidebar, emit)
   flex-shrink: 0;
   max-width: var(--sidebar--width-hide);
   transition: var(--sidebar--transition);
-  border-right: var(--sidebar-border);
+  border-right: 1px solid var(--sidebar-border);
   background-color: var(--sidebar-background);
 
   &[data-expand="true"] {
@@ -106,6 +106,11 @@ const { toggleExpand } = useExpandSidebar(isExpandSidebar, emit)
 
     .expander {
       cursor: pointer;
+
+      :deep(svg) {
+        width: 32px;
+        height: 32px;
+      }
     }
   }
 

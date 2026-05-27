@@ -53,8 +53,8 @@ const isExpandSidebar = ref(false)
     display: flex;
     flex-direction: column;
     position: relative;
-    background-color: var(--colors-white);
-    width: calc(100% - var(sidebar--width-expand));
+    background-color: var(--sidebar);
+    width: calc(100% - var(--sidebar--width-expand));
     transition: var(--sidebar--transition);
 
     &_expand {
