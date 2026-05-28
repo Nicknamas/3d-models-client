@@ -14,13 +14,24 @@ const sessions = ref([])
 
 const userInput = ref<string>()
 
+const intlFormatter = new Intl.DateTimeFormat('ru-RU', {
+  dateStyle: 'short',
+  timeStyle: 'short',
+})
+
 const sessionIdFromRoute = computed(() => route.params.sessionId)
+
+async function createSession(): Promise<void> {
+  router.push({ name: 'Home' })
+  messages.value = []
+}
 
 async function postMessage(): Promise<void> {
   if (!sessionIdFromRoute.value) {
     const response = await axios.post('/sessions')
     const sessionId = response.data.id
     await router.push({ name: 'HomeWithSession', params: { sessionId } })
+    await updateSessions()
   }
 
   await axios.post('/messages', {
@@ -69,12 +80,13 @@ watch(sessionIdFromRoute, () => {
               <p :class="$style.text">
                 {{ item.description }}
               </p>
+              <datetime>{{ intlFormatter.format(new Date(item.created_at)) }}</datetime>
             </div>
             <div :class="$style.aiMessage">
-              <div :class="$style.circle"></div>
-              <a :class="$style.text">
+              <p :class="$style.text">
                 {{ item.data }}
-              </a>
+              </p>
+              <datetime>{{ intlFormatter.format(new Date(item.created_at)) }}</datetime>
             </div>
           </div>
         </div>
@@ -116,6 +128,12 @@ watch(sessionIdFromRoute, () => {
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-message-square size-5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
           </button>
+          <button
+            :class="$style.icon"
+            @click="createSession"
+          >
+            +
+          </button>
         </div>
       </div>
     </div>
@@ -130,7 +148,10 @@ watch(sessionIdFromRoute, () => {
           :key="session.id"
           :class="$style.session"
         >
-          {{ session.title }}
+          <p>
+              {{ session.title }}
+          </p>
+          <datetime>{{ intlFormatter.format(new Date(session.created_at)) }}</datetime>
         </RouterLink>
       </div>
     </div>
@@ -151,7 +172,7 @@ watch(sessionIdFromRoute, () => {
     min-width: 300px;
     background-image: linear-gradient(to right bottom in oklab, rgba(0, 212, 255, 0.05) 0%, rgba(138, 43, 226, 0.05) 100%);
     border: 1px solid var(--sidebar-border);
-    border-radius: 12px;
+    border-radius: 8px;
 
     .sessions {
       position: relative;
@@ -159,7 +180,7 @@ watch(sessionIdFromRoute, () => {
       flex-direction: column;
       overflow-y: auto;
       height: 100%;
-      padding-inline: 12px;
+      padding: 12px;
 
       .session {
         color: white;
@@ -251,6 +272,7 @@ watch(sessionIdFromRoute, () => {
 
     .footer {
       display: flex;
+      gap: 12px;
       justify-content: start;
       width: 100%;
 
@@ -263,6 +285,10 @@ watch(sessionIdFromRoute, () => {
         border: 2px solid white;
         padding: 8px;
         border-radius: 50%;
+        color: white;
+        width: 48px;
+        height: 48px;
+        font-size: 24px;
 
         &:hover {
           scale: 1.06;
@@ -388,5 +414,10 @@ watch(sessionIdFromRoute, () => {
       height: 24px;
     }
   }
+}
+
+datetime {
+  font-size: 12px;
+  color: #272727;
 }
 </style>

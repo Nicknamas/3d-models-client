@@ -25,20 +25,11 @@ const handleSubmit = async () => {
       password: password.value
     }
 
-    const response = await axios.post('http://localhost:5000/login', data);
+    await axios.post('http://localhost:5000/users', data);
 
-    const { access_token, refresh_token } = response.data
-
-    localStorage.setItem('accessToken', access_token)
-    localStorage.setItem('refreshToken', refresh_token)
-
-    router.push({ name: 'Home' })
+    router.push({ name: 'Login' })
 
   } catch (err) {
-    if (err.message === "Request failed with status code 400") {
-      error.value = 'Неверный email или пароль'
-      return
-    }
     error.value = err.message
   } finally {
     isLoading.value = false;
@@ -49,7 +40,7 @@ const handleSubmit = async () => {
 <template>
   <div :class="$style.wrapper">
     <div :class="$style.card">
-      <h2 :class="$style.title">Вход в систему</h2>
+      <h2 :class="$style.title">Регистрация</h2>
 
       <form @submit.prevent="handleSubmit" :class="$style.form">
         <div :class="$style.field">
@@ -79,10 +70,10 @@ const handleSubmit = async () => {
         </p>
 
         <a
-          @click="$router.push({ name: 'Register' })"
+          @click="$router.push({ name: 'Login' })"
           :class="[$style.label, $style.link]"
         >
-          Нет аккаунта?
+          Есть аккаунт?
         </a>
 
         <button
@@ -130,6 +121,12 @@ const handleSubmit = async () => {
   gap: 1.25rem;
 }
 
+.link {
+  text-decoration: underline;
+  text-align: center;
+  cursor: pointer;
+}
+
 .field {
   display: flex;
   flex-direction: column;
@@ -140,12 +137,6 @@ const handleSubmit = async () => {
   font-size: 0.875rem;
   font-weight: 500;
   color: var(--sidebar-foreground);
-}
-
-.link {
-  text-decoration: underline;
-  text-align: center;
-  cursor: pointer;
 }
 
 .input {
