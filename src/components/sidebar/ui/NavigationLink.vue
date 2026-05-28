@@ -30,6 +30,7 @@ defineProps<Props>()
 <style lang="scss" scoped>
 .navigation-link {
   display: flex;
+  justify-content: center;
   align-items: center;
   gap: 12px;
   font-size: 16px;
