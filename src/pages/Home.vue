@@ -122,6 +122,7 @@ async function updateSessions() {
 }
 
 watch(sessionIdFromRoute, () => {
+  messages.value = []
   updateItems()
   updateSessions()
 }, { immediate: true })
