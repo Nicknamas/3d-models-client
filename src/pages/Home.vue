@@ -85,10 +85,21 @@ async function postMessage(): Promise<void> {
   userInput.value = ''
 
   try {
-    await axios.post('/messages', {
+    const response = await axios.post('/messages', {
       session_id: sessionIdFromRoute.value,
       request
     })
+
+    if (response.statusText === "Need more money :D") {
+      useMessage({
+        type: 'success',
+        message: 'Пополните баланс',
+        duration: 3000,
+      })
+      isLoading.value = false
+      messages.value.pop()
+      return
+    }
 
     useMessage({
       type: 'success',
