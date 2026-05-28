@@ -23,6 +23,16 @@ const intlFormatter = new Intl.DateTimeFormat('ru-RU', {
 
 const sessionIdFromRoute = computed(() => route.params.sessionId)
 
+async function deleteSession(sessionId): Promise<void> {
+  await axios.delete('/sessions/' + sessionId)
+  await updateItems()
+  await updateSessions()
+
+  if (sessionId == sessionIdFromRoute.value) {
+    router.push({ name: 'Home' })
+  }
+}
+
 async function createSession(): Promise<void> {
   router.push({ name: 'Home' })
   messages.value = []
@@ -90,7 +100,7 @@ watch(sessionIdFromRoute, () => {
               <p :class="$style.text">
                 {{ item.request }}
               </p>
-              <datetime>{{ intlFormatter.format(new Date(item.created_at)) }}</datetime>
+              <p :class="$style.datetime">{{ intlFormatter.format(new Date(item.created_at)) }}</p>
             </div>
             <div
               :class="$style.aiMessage"
@@ -117,7 +127,7 @@ watch(sessionIdFromRoute, () => {
               >
                 {{ item.script }}
               </p>
-              <datetime>{{ intlFormatter.format(new Date(item.created_at)) }}</datetime>
+              <p :class="$style.datetime">{{ intlFormatter.format(new Date(item.created_at)) }}</p>
             </div>
           </div>
         </div>
@@ -173,17 +183,23 @@ watch(sessionIdFromRoute, () => {
       :class="$style.aside"
     >
       <div :class="$style.sessions">
-        <RouterLink
+        <a
           v-for="session of sessions"
-          :to="{ name: 'HomeWithSession', params: { sessionId: session.id } }"
           :key="session.id"
           :class="$style.session"
+          @click="$router.push({ name: 'HomeWithSession', params: { sessionId: session.id } })"
         >
+          <button
+            :class="$style.icon"
+            @click.stop="deleteSession(session.id)"
+          >
+            x
+          </button>
           <p>
               {{ session.title }}
           </p>
-          <datetime>{{ intlFormatter.format(new Date(session.created_at)) }}</datetime>
-        </RouterLink>
+          <p :class="$style.datetime">{{ intlFormatter.format(new Date(session.created_at)) }}</p>
+        </a>
       </div>
     </div>
   </div>
@@ -214,13 +230,49 @@ watch(sessionIdFromRoute, () => {
       padding: 12px;
 
       .session {
+        position: relative;
         color: white;
         padding: 16px 20px;
         transition: 0.2s;
         border-radius: 12px;
 
         &:hover {
-          background-color: var(--accent);
+          background-color: var(--neon-purple);
+
+          .icon {
+            border-color: white;
+            color: white;
+          }
+        }
+
+        .icon {
+          position: absolute;
+          top: calc(50% - 10px);
+          right: 8px;
+          background-color: transparent;
+          cursor: pointer;
+          transition: 0.1s;
+          display: grid;
+          place-items: center;
+          border: 2px solid red;
+          border-radius: 50%;
+          color: red;
+          width: 24px;
+          height: 24px;
+          font-size: 14px;
+          font-weight: bold;
+
+          &:hover {
+            scale: 1.06;
+          }
+
+          &:active {
+            scale: 0.95;
+          }
+
+          path {
+            stroke: red;
+          }
         }
       }
     }
@@ -462,7 +514,7 @@ watch(sessionIdFromRoute, () => {
   }
 }
 
-datetime {
+.datetime {
   font-size: 12px;
   color: var(--muted-foreground);
 }
