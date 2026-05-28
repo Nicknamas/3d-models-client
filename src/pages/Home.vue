@@ -3,13 +3,19 @@ import DownloadFile from '@/components/DownloadFile.vue';
 import Icon from '@/components/icon';
 import Toggle from '@/components/Toggle.vue';
 import { useAxios } from '@/utils/useAxios';
-import { computed, ref, watch } from 'vue';
+import { computed, ref, useTemplateRef, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router'
+import { MdPreview } from 'md-editor-v3';
+import 'md-editor-v3/lib/preview.css';
+import Loader from '@/components/Loader.vue';
+import useMessage from '@/utils/useMessage.ts';
 
 const axios = useAxios()
 const route = useRoute()
 const router = useRouter()
 const isAsideVisible = ref(false)
+
+const cardRef = useTemplateRef<HTMLDivElement>('card')
 
 const messages = ref([])
 const sessions = ref([])
@@ -48,22 +54,58 @@ async function postMessage(): Promise<void> {
     await updateSessions()
   }
 
-  await axios.post('/messages', {
-    session_id: sessionIdFromRoute.value,
-    request: userInput.value
+
+  const scrollHeight = cardRef.value?.scrollHeight
+  cardRef.value?.scroll({ behavior: 'smooth', top: scrollHeight })
+
+  const request = userInput.value
+
+  messages.value.push({
+    id: 0,
+    request,
+    script: '',
+    description: '',
+    isShow: false,
+    created_at: new Date(),
   })
 
   userInput.value = ''
 
-  await updateItems()
-  isLoading.value = true
+  try {
+    await axios.post('/messages', {
+      session_id: sessionIdFromRoute.value,
+      request
+    })
+
+    useMessage({
+      type: 'success',
+      message: 'Запрос обработался',
+      duration: 3000,
+    })
+
+    const scrollHeight = cardRef.value?.scrollHeight
+    cardRef.value?.scroll({ behavior: 'smooth', top: scrollHeight })
+
+    messages.value.pop()
+
+    await updateItems()
+  } catch (e) {
+    useMessage({
+      type: 'error',
+      message: 'Возникла ошибка',
+      duration: 3000,
+    })
+
+    messages.value.pop()
+  } finally {
+    isLoading.value = false
+  }
 }
 
 async function updateItems() {
   if (sessionIdFromRoute.value) {
     const params = new URLSearchParams({ session_id: sessionIdFromRoute.value as string })
     const response = await axios.get('/messages?' + params)
-    await axios.get('/objects')
     response.data.map((item) => {
       return {
         ...item,
@@ -88,7 +130,10 @@ watch(sessionIdFromRoute, () => {
 <template>
   <div :class="$style.page">
     <div :class="$style.block">
-      <div :class="$style.card">
+      <div
+        ref="card"
+        :class="$style.card"
+      >
         <div
           :class="$style.items"
         >
@@ -105,6 +150,7 @@ watch(sessionIdFromRoute, () => {
               <p :class="$style.datetime">{{ intlFormatter.format(new Date(item.created_at)) }}</p>
             </div>
             <div
+              v-if="item.description"
               :class="$style.aiMessage"
             >
               <div :class="$style.row">
@@ -118,18 +164,20 @@ watch(sessionIdFromRoute, () => {
                 />
                 <DownloadFile :model-object="item.object" />
               </div>
-              <p
+              <MdPreview
                 v-if="item.isShow"
-                :class="$style.text"
-              >
-                {{ item.description }}
-              </p>
-              <p
+                :model-value="item.description"
+                :class="$style.editor"
+                theme="dark"
+                :code-foldable="false"
+              />
+              <MdPreview
+                :class="$style.editor"
                 v-else
-                :class="$style.text"
-              >
-                {{ item.script }}
-              </p>
+                :model-value="item.script"
+                theme="light"
+                :code-foldable="false"
+              />
               <p :class="$style.datetime">{{ intlFormatter.format(new Date(item.created_at)) }}</p>
             </div>
           </div>
@@ -151,17 +199,25 @@ watch(sessionIdFromRoute, () => {
         <div :class="$style.header">
           <input
             v-model="userInput"
-            :class="$style.input"
+            :class="[$style.input, isLoading ? $style.loading : undefined]"
+            :disabled="isLoading"
             placeholder="Опишите свою 3D-модель... (например, «Футуристический мотоцикл в стиле киберпанк с неоновыми огнями»)"
             type="text"
+            @keydown.enter="postMessage"
           />
           <button
             :class="$style.button"
+            :disabled="isLoading"
             @click="postMessage"
           >
             <Icon
+              v-if="!isLoading"
               :class="$style.icon"
               name="logo"
+            />
+            <Loader
+              v-else
+              loading
             />
           </button>
         </div>
@@ -189,7 +245,7 @@ watch(sessionIdFromRoute, () => {
         <a
           v-for="session of sessions"
           :key="session.id"
-          :class="$style.session"
+          :class="[$style.session, session.id == sessionIdFromRoute ? $style.active : undefined]"
           @click="$router.push({ name: 'HomeWithSession', params: { sessionId: session.id } })"
         >
           <button
@@ -228,6 +284,7 @@ watch(sessionIdFromRoute, () => {
       position: relative;
       display: flex;
       flex-direction: column;
+      gap: 4px;
       overflow-y: auto;
       height: 100%;
       padding: 12px;
@@ -238,6 +295,17 @@ watch(sessionIdFromRoute, () => {
         padding: 16px 20px;
         transition: 0.2s;
         border-radius: 12px;
+        cursor: pointer;
+
+        &.active {
+          cursor: default;
+          background-color: var(--neon-purple);
+
+          .icon {
+            border-color: white;
+            color: white;
+          }
+        }
 
         &:hover {
           background-color: var(--neon-purple);
@@ -250,7 +318,7 @@ watch(sessionIdFromRoute, () => {
 
         .icon {
           position: absolute;
-          top: calc(50% - 10px);
+          top: calc(50% - 12px);
           right: 8px;
           background-color: transparent;
           cursor: pointer;
@@ -414,6 +482,10 @@ watch(sessionIdFromRoute, () => {
       width: 100%;
       color: rgb(240, 240, 245);
       font-size: 24px;
+
+      &[disabled] {
+        cursor: progress;
+      }
     }
   }
 }
@@ -479,6 +551,7 @@ watch(sessionIdFromRoute, () => {
 
 .button {
   display: flex;
+  justify-content: center;
   align-items: center;
   gap: 8px;
   padding: 8px 12px;
@@ -496,6 +569,11 @@ watch(sessionIdFromRoute, () => {
 
   &:active {
     scale: 0.98;
+  }
+
+  &[disabled] {
+    cursor: progress;
+    width: 60px;
   }
 
   .icon {
@@ -520,5 +598,16 @@ watch(sessionIdFromRoute, () => {
 .datetime {
   font-size: 12px;
   color: var(--muted-foreground);
+}
+</style>
+
+<style>
+.md-editor-preview .md-editor-code {
+  margin: 0 !important;
+}
+
+.md-editor-previewOnly {
+  background-color: transparent;
+  height: fit-content;
 }
 </style>
