@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import DownloadFile from '@/components/DownloadFile.vue';
 import Icon from '@/components/icon';
 import Toggle from '@/components/Toggle.vue';
 import { useAxios } from '@/utils/useAxios';
@@ -62,6 +63,7 @@ async function updateItems() {
   if (sessionIdFromRoute.value) {
     const params = new URLSearchParams({ session_id: sessionIdFromRoute.value as string })
     const response = await axios.get('/messages?' + params)
+    await axios.get('/objects')
     response.data.map((item) => {
       return {
         ...item,
@@ -114,6 +116,7 @@ watch(sessionIdFromRoute, () => {
                   :is-toggled="item.isShow"
                   @click="item.isShow = !item.isShow"
                 />
+                <DownloadFile :model-object="item.object" />
               </div>
               <p
                 v-if="item.isShow"
