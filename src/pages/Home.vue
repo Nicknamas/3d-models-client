@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import Icon from '@/components/icon';
+import Toggle from '@/components/Toggle.vue';
 import { useAxios } from '@/utils/useAxios';
 import { computed, ref, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router'
@@ -13,6 +14,7 @@ const messages = ref([])
 const sessions = ref([])
 
 const userInput = ref<string>()
+const isLoading = ref<boolean>(false)
 
 const intlFormatter = new Intl.DateTimeFormat('ru-RU', {
   dateStyle: 'short',
@@ -27,6 +29,7 @@ async function createSession(): Promise<void> {
 }
 
 async function postMessage(): Promise<void> {
+  isLoading.value = true
   if (!sessionIdFromRoute.value) {
     const response = await axios.post('/sessions')
     const sessionId = response.data.id
@@ -36,18 +39,25 @@ async function postMessage(): Promise<void> {
 
   await axios.post('/messages', {
     session_id: sessionIdFromRoute.value,
-    description: userInput.value
+    request: userInput.value
   })
 
   userInput.value = ''
 
   await updateItems()
+  isLoading.value = true
 }
 
 async function updateItems() {
   if (sessionIdFromRoute.value) {
     const params = new URLSearchParams({ session_id: sessionIdFromRoute.value as string })
     const response = await axios.get('/messages?' + params)
+    response.data.map((item) => {
+      return {
+        ...item,
+        isShow: false,
+      }
+    })
     messages.value = response.data
   }
 }
@@ -78,13 +88,34 @@ watch(sessionIdFromRoute, () => {
             <div :class="$style.userMessage">
               <div :class="$style.circle"></div>
               <p :class="$style.text">
-                {{ item.description }}
+                {{ item.request }}
               </p>
               <datetime>{{ intlFormatter.format(new Date(item.created_at)) }}</datetime>
             </div>
-            <div :class="$style.aiMessage">
-              <p :class="$style.text">
-                {{ item.data }}
+            <div
+              :class="$style.aiMessage"
+            >
+              <div :class="$style.row">
+                <p :class="$style.text">
+                  скрипт / описание
+                </p>
+                <Toggle
+                  :class="$style.toggle"
+                  :is-toggled="item.isShow"
+                  @click="item.isShow = !item.isShow"
+                />
+              </div>
+              <p
+                v-if="item.isShow"
+                :class="$style.text"
+              >
+                {{ item.description }}
+              </p>
+              <p
+                v-else
+                :class="$style.text"
+              >
+                {{ item.script }}
               </p>
               <datetime>{{ intlFormatter.format(new Date(item.created_at)) }}</datetime>
             </div>
@@ -243,7 +274,22 @@ watch(sessionIdFromRoute, () => {
         }
 
         .aiMessage {
+          position: relative;
           max-width: 70%;
+          padding-top: 60px;
+
+          .row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            position: absolute;
+            top: 10px;
+            right: 10px;
+          }
+
+          .toggle {
+            cursor: pointer;
+          }
         }
       }
     }
@@ -418,6 +464,6 @@ watch(sessionIdFromRoute, () => {
 
 datetime {
   font-size: 12px;
-  color: #272727;
+  color: var(--muted-foreground);
 }
 </style>
