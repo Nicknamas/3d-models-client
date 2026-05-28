@@ -13,7 +13,7 @@ function loadIcons() {
     svgResources.set(name, String(modules[fileName]))
   }
 
-  modules = import.meta.glob('@/assets/images/**/*.png', {
+  modules = import.meta.glob('@/assets/images/**/*.{png,jpg}', {
     query: '?url',
     import: 'default',
     eager: true,

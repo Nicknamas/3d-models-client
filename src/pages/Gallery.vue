@@ -1,56 +1,47 @@
-<script setup>
-import { ref } from 'vue';
+<script lang="ts" setup>
+import DownloadFile from '@/components/DownloadFile.vue';
+import Icon from '@/components/icon';
+import { decodeJWT } from '@/utils/jwt';
+import { useAxios } from '@/utils/useAxios';
+import { onBeforeMount, ref, watch } from 'vue';
 
-const models = ref([
-  {
-    title: 'Cyberpunk Bike',
-    author: '@designer_01',
-    emoji: '🏍️',
-    tags: ['Sci-Fi', 'Vehicle']
-  },
-  {
-    title: 'Space Station',
-    author: '@architect_3d',
-    emoji: '🛸',
-    tags: ['Sci-Fi', 'Building']
-  },
-  {
-    title: 'Fantasy Sword',
-    author: '@gamedev_pro',
-    emoji: '⚔️',
-    tags: ['Fantasy', 'Weapon']
-  },
-  {
-    title: 'Robot Character',
-    author: '@creator_ai',
-    emoji: '🤖',
-    tags: ['Sci-Fi', 'Character']
-  },
-  {
-    title: 'Crystal Formation',
-    author: '@artist_digital',
-    emoji: '💎',
-    tags: ['Nature', 'Low-Poly']
-  },
-  {
-    title: 'Futuristic Car',
-    author: '@designer_01',
-    emoji: '🚗',
-    tags: ['Sci-Fi', 'Vehicle']
-  },
-  {
-    title: 'Dragon Statue',
-    author: '@sculptor_3d',
-    emoji: '🐉',
-    tags: ['Fantasy', 'Creature']
-  },
-  {
-    title: 'Space Helmet',
-    author: '@gamedev_pro',
-    emoji: '👨‍🚀',
-    tags: ['Sci-Fi', 'Prop']
+const tags = ['Sci-Fi', 'Vehicle', 'Building', 'Fantasy', 'Weapon', 'Nature', 'Low-Poly']
+const images = ['car', 'house', 'knight', 'robot', 'tree']
+
+const axios = useAxios()
+
+const models = ref([])
+
+const me = ref()
+
+const selfId = ref<string>('')
+
+watch(selfId, async () => {
+  if (selfId.value) {
+    const objects = await axios.get(`/objects`)
+    const response = await axios.get(`/users/${selfId.value}`)
+    me.value = response.data
+    models.value = objects.data
+
+    models.value = models.value.map((item) => {
+      return {
+        ...item,
+        tags: []
+      }
+    })
+
+    for (let i = 0; i < models.value.length; i++) {
+      console.log('helo')
+      const tag = tags[i % tags.length]
+      models.value[i].tags.push(tag)
+    }
   }
-]);
+})
+
+onBeforeMount(() => {
+  const accessToken = localStorage.getItem('accessToken')
+  selfId.value = decodeJWT(accessToken!).sub
+})
 </script>
 
 <template>
@@ -67,12 +58,21 @@ const models = ref([
         :class="$style.card"
       >
         <div :class="$style.previewArea">
-          <span :class="$style.modelEmoji">{{ model.emoji }}</span>
+          <Icon :name="images[index % images.length]" />
         </div>
 
         <div :class="$style.infoArea">
-          <h2 :class="$style.modelTitle">{{ model.title }}</h2>
-          <p :class="$style.author">{{ model.author }}</p>
+          <h2 :class="$style.modelTitle">{{ model.title ? model.title : 'Object' + index }}</h2>
+          <p :class="$style.author">{{ me.username }}</p>
+          <div :class="$style.tags">
+            <p
+              v-for="tag of model.tags"
+              :class="$style.tag"
+            >
+              {{ tag }}
+            </p>
+          </div>
+          <DownloadFile :model-object="model" />
         </div>
       </article>
     </main>
@@ -129,7 +129,8 @@ const models = ref([
 }
 
 .previewArea {
-  height: 220px;
+  height: 100%;
+  object-fit: contain;
   background: radial-gradient(circle at center, #1f2330 0%, #13151a 100%);
   display: flex;
   align-items: center;
