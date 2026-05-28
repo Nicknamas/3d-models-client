@@ -60,7 +60,7 @@ function logout(): void {
     >
       <Icon
         :class="$style.avatar"
-        name="avatar"
+        name="close"
         size="24"
       />
     </div>
@@ -140,6 +140,17 @@ function logout(): void {
       width: var(--avatar-size);
       height: var(--avatar-size);
       border-radius: 50%;
+      color: white;
+      display: grid;
+      place-items: center;
+
+      width: 60px;
+      height: 60px;
+
+      svg {
+        stroke: white;
+        cursor: pointer;
+      }
     }
 
     .text[data-size="md"] {

@@ -3,12 +3,13 @@ import DownloadFile from '@/components/DownloadFile.vue';
 import Icon from '@/components/icon';
 import Toggle from '@/components/Toggle.vue';
 import { useAxios } from '@/utils/useAxios';
-import { computed, ref, useTemplateRef, watch } from 'vue';
+import { computed, onBeforeMount, ref, useTemplateRef, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router'
 import { MdPreview } from 'md-editor-v3';
 import 'md-editor-v3/lib/preview.css';
 import Loader from '@/components/Loader.vue';
 import useMessage from '@/utils/useMessage.ts';
+import { decodeJWT } from '@/utils/jwt';
 
 const axios = useAxios()
 const route = useRoute()
@@ -38,11 +39,23 @@ async function deleteSession(sessionId): Promise<void> {
   if (sessionId == sessionIdFromRoute.value) {
     router.push({ name: 'Home' })
   }
+
+  useMessage({
+    type: 'success',
+    message: 'Сессия удалена',
+    duration: 3000,
+  })
 }
 
 async function createSession(): Promise<void> {
   router.push({ name: 'Home' })
   messages.value = []
+
+  useMessage({
+    type: 'success',
+    message: 'Сессия создана',
+    duration: 3000,
+  })
 }
 
 async function postMessage(): Promise<void> {
@@ -126,6 +139,7 @@ watch(sessionIdFromRoute, () => {
   updateItems()
   updateSessions()
 }, { immediate: true })
+
 </script>
 
 <template>

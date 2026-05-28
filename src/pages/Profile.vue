@@ -1,24 +1,50 @@
 <script lang="ts" setup>
+import Dialog from '@/components/Dialog.vue';
 import { decodeJWT } from '@/utils/jwt';
 import { useAxios } from '@/utils/useAxios';
-import { onBeforeMount, ref, watch } from 'vue';
+import useMessage from '@/utils/useMessage';
+import { onBeforeMount, onUpdated, ref, watch } from 'vue';
 
 const axios = useAxios()
 
 const selfId = ref<string>('')
+const isShow = ref<boolean>(false)
 
 const me = ref()
+const balance = ref({ balance: 0 })
+
+const amount = ref(0)
+
+async function postAmount() {
+  await axios.post('/credits/add', { amount: amount.value })
+  const responseBalance = await axios.get(`/credits/me/balance`)
+  balance.value.balance = responseBalance.data.balance
+  useMessage({
+    type: 'success',
+    message: 'Баланс пополнен',
+    duration: 3000,
+  })
+}
 
 watch(selfId, async () => {
   if (selfId.value) {
-    const response = await axios.get(`/users/${selfId.value}`)
-    me.value = response.data
+    const responseMe = await axios.get(`/users/${selfId.value}`)
+    const responseBalance = await axios.get(`/credits/me/balance`)
+    me.value = responseMe.data
+    balance.value = responseBalance.data
   }
 })
 
 onBeforeMount(() => {
   const accessToken = localStorage.getItem('accessToken')
   selfId.value = decodeJWT(accessToken!).sub
+})
+
+onUpdated(async () => {
+  const responseBalance = await axios.get(`/credits/me/balance`)
+  if (balance.value != responseBalance.data.balance) {
+    balance.value.balance = responseBalance.data.balance
+  }
 })
 </script>
 
@@ -35,39 +61,6 @@ onBeforeMount(() => {
 
       <div :class="$style.profileInfo">
         <h1 :class="$style.profileName">{{ me?.username }}</h1>
-        <p :class="$style.profileEmail">john@designer.com</p>
-
-        <div :class="$style.statsGrid">
-          <div :class="$style.statItem">
-            <div :class="[$style.iconContainer, $style.iconBlue]">
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2"/></svg>
-            </div>
-            <div>
-              <div :class="$style.statValue">127</div>
-              <div :class="$style.statLabel">Models Created</div>
-            </div>
-          </div>
-
-          <div :class="$style.statItem">
-            <div :class="[$style.iconContainer, $style.iconGreen]">
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
-            </div>
-            <div>
-              <div :class="$style.statValue">1.2K</div>
-              <div :class="$style.statLabel">Total Downloads</div>
-            </div>
-          </div>
-
-          <div :class="$style.statItem">
-            <div :class="[$style.iconContainer, $style.iconPurple]">
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-            </div>
-            <div>
-              <div :class="$style.statValue">Jan 2026</div>
-              <div :class="$style.statLabel">Member Since</div>
-            </div>
-          </div>
-        </div>
       </div>
     </header>
 
@@ -79,11 +72,38 @@ onBeforeMount(() => {
           <p :class="$style.currentPlanDesc">100 credits per month</p>
         </div>
         <div :class="$style.creditsBlock">
-          <div :class="$style.creditsValue">45</div>
+          <div :class="$style.creditsValue">{{ balance?.balance ?? 0 }}</div>
           <div :class="$style.creditsLabel">Credits remaining</div>
         </div>
       </div>
+      <button
+        :class="$style.button"
+        @click="isShow = true"
+      >
+        Пополнить баланс
+      </button>
     </section>
+    <Dialog v-model="isShow" width="500">
+      <template #header>
+        <h2>На сколько пополнить баланс?</h2>
+      </template>
+      <template #content>
+        <input
+          :class="$style.input"
+          type="number"
+          placeholder="0"
+          v-model="amount"
+        >
+      </template>
+      <template #buttons>
+        <button
+          :class="$style.button"
+          @click="postAmount"
+        >
+          Пополнить
+        </button>
+      </template>
+    </Dialog>
   </div>
 </template>
 
@@ -110,15 +130,14 @@ onBeforeMount(() => {
   box-sizing: border-box;
 }
 
-/* Блок Профиля */
 .profileCard {
+  display: flex;
+  align-items: center;
   background-color: #13151a;
   border: 1px solid #1f222a;
   border-radius: 12px;
   padding: 2rem;
-  display: flex;
   gap: 2rem;
-  align-items: flex-start;
   margin-bottom: 2.5rem;
 }
 
@@ -132,10 +151,15 @@ onBeforeMount(() => {
   background: linear-gradient(180deg, #4da3ff 0%, #a166ff 100%);
   border-radius: 12px;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: center;
   color: #ffffff;
   overflow: hidden;
+
+  svg {
+    width: 80%;
+    height: 80%;
+  }
 }
 
 .profileInfo {
@@ -360,5 +384,40 @@ onBeforeMount(() => {
   background: linear-gradient(90deg, #00bcd4, #ab47bc);
   border: none;
   font-weight: 600;
+}
+
+.button {
+  margin-top: 12px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  background-color: var(--accent);
+  color: white;
+  cursor: pointer;
+  transition: 0.1s;
+
+  &:hover {
+    scale: 1.05;
+  }
+
+  &:active {
+    scale: 0.95;
+  }
+}
+
+.input {
+  width: 100%;
+  padding: 16px;
+  margin-top: 20px;
+  background-color: transparent;
+  color: white;
+  font-size: 24px;
+
+  &::placeholder {
+    color: white;
+  }
+}
+
+h2 {
+  color: white;
 }
 </style>

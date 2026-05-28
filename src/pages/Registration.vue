@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import useMessage from '@/utils/useMessage';
 import axios from 'axios';
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
@@ -26,6 +27,11 @@ const handleSubmit = async () => {
     }
 
     await axios.post('http://localhost:5000/users', data);
+    useMessage({
+      type: 'success',
+      message: 'Успешная Регистрация',
+      duration: 3000,
+    })
 
     router.push({ name: 'Login' })
 
@@ -81,7 +87,7 @@ const handleSubmit = async () => {
           :disabled="isLoading"
           :class="$style.button"
         >
-          {{ isLoading ? 'Вход...' : 'Войти' }}
+          {{ isLoading ? 'Регистрация...' : 'Войти' }}
         </button>
       </form>
     </div>
