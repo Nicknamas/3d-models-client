@@ -7,8 +7,10 @@ import { useRouter, useRoute } from 'vue-router'
 const axios = useAxios()
 const route = useRoute()
 const router = useRouter()
+const isAsideVisible = ref(false)
 
-const items = ref([])
+const messages = ref([])
+const sessions = ref([])
 
 const userInput = ref<string>()
 
@@ -33,69 +35,104 @@ async function postMessage(): Promise<void> {
 
 async function updateItems() {
   if (sessionIdFromRoute.value) {
-    const response = await axios.get('/messages')
-    items.value = response.data
+    const params = new URLSearchParams({ session_id: sessionIdFromRoute.value as string })
+    const response = await axios.get('/messages?' + params)
+    messages.value = response.data
   }
 }
 
-watch(sessionIdFromRoute, updateItems, { immediate: true })
+async function updateSessions() {
+  const response = await axios.get('/sessions')
+  sessions.value = response.data
+}
+
+watch(sessionIdFromRoute, () => {
+  updateItems()
+  updateSessions()
+}, { immediate: true })
 </script>
 
 <template>
   <div :class="$style.page">
-    <div :class="$style.card">
-      <div
-        :class="$style.items"
-      >
+    <div :class="$style.block">
+      <div :class="$style.card">
         <div
-          v-for="item of items"
-          :key="item.id"
-          :class="$style.item"
+          :class="$style.items"
         >
-          <div :class="$style.userMessage">
-            <div :class="$style.circle"></div>
-            <p :class="$style.text">
-              {{ item.description }}
-            </p>
+          <div
+            v-for="item of messages"
+            :key="item.id"
+            :class="$style.item"
+          >
+            <div :class="$style.userMessage">
+              <div :class="$style.circle"></div>
+              <p :class="$style.text">
+                {{ item.description }}
+              </p>
+            </div>
+            <div :class="$style.aiMessage">
+              <div :class="$style.circle"></div>
+              <a :class="$style.text">
+                {{ item.data }}
+              </a>
+            </div>
           </div>
-          <div :class="$style.aiMessage">
-            <div :class="$style.circle"></div>
-            <a :class="$style.text">
-              some-file.txt
-            </a>
-          </div>
+        </div>
+        <div
+          :class="
+            [$style.logoContainer, messages.length ? $style.opacity : undefined]
+          "
+        >
+          <Icon
+            name="big-logo"
+            :class="$style.logo"
+          />
         </div>
       </div>
       <div
-        :class="
-          [$style.logoContainer, items.length ? $style.opacity : undefined]
-        "
+        :class="$style.inputBlock"
       >
-        <Icon
-          name="big-logo"
-          :class="$style.logo"
-        />
+        <div :class="$style.header">
+          <input
+            v-model="userInput"
+            :class="$style.input"
+            placeholder="Опишите свою 3D-модель... (например, «Футуристический мотоцикл в стиле киберпанк с неоновыми огнями»)"
+            type="text"
+          />
+          <button
+            :class="$style.button"
+            @click="postMessage"
+          >
+            <Icon
+              :class="$style.icon"
+              name="logo"
+            />
+          </button>
+        </div>
+        <div :class="$style.footer">
+          <button
+            :class="$style.icon"
+            @click="isAsideVisible = !isAsideVisible"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-message-square size-5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+          </button>
+        </div>
       </div>
     </div>
     <div
-      :class="$style.inputBlock"
+      v-if="isAsideVisible"
+      :class="$style.aside"
     >
-      <input
-        v-model="userInput"
-        :class="$style.input"
-        placeholder="Опишите свою 3D-модель... (например, «Футуристический мотоцикл в стиле киберпанк с неоновыми огнями»)"
-        type="text"
-      />
-      <button
-        :class="$style.button"
-        @click="postMessage"
-      >
-        <Icon
-          :class="$style.icon"
-          name="logo"
-        />
-        Generate 3D
-      </button>
+      <div :class="$style.sessions">
+        <RouterLink
+          v-for="session of sessions"
+          :to="{ name: 'HomeWithSession', params: { sessionId: session.id } }"
+          :key="session.id"
+          :class="$style.session"
+        >
+          {{ session.title }}
+        </RouterLink>
+      </div>
     </div>
   </div>
 </template>
@@ -103,14 +140,49 @@ watch(sessionIdFromRoute, updateItems, { immediate: true })
 <style module>
 .page {
   display: flex;
-  flex-direction: column;
   gap: 20px;
   background-color: var(--sidebar);
   padding: 20px;
   height: 100%;
 
-  .card {
+  .aside {
     position: relative;
+    height: 100%;
+    min-width: 300px;
+    background-image: linear-gradient(to right bottom in oklab, rgba(0, 212, 255, 0.05) 0%, rgba(138, 43, 226, 0.05) 100%);
+    border: 1px solid var(--sidebar-border);
+    border-radius: 12px;
+
+    .sessions {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      height: 100%;
+      padding-inline: 12px;
+
+      .session {
+        color: white;
+        padding: 16px 20px;
+        transition: 0.2s;
+        border-radius: 12px;
+
+        &:hover {
+          background-color: var(--accent);
+        }
+      }
+    }
+  }
+
+  .block {
+    position: relative;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .card {
     border-radius: 12px;
     border: 1px solid var(--sidebar-border);
     background-image: linear-gradient(to right bottom in oklab, rgba(0, 212, 255, 0.05) 0%, rgba(138, 43, 226, 0.05) 100%);
@@ -133,13 +205,15 @@ watch(sessionIdFromRoute, updateItems, { immediate: true })
         flex-direction: column;
         gap: 8px;
         color: var(--colors-white);
-        font-size: 24px;
+        font-size: 16px;
 
         .userMessage, .aiMessage {
           padding: 12px 16px;
           border-radius: 12px;
           background-color: var(--muted);
           width: fit-content;
+          white-space: break-spaces;
+          word-wrap: break-word;
         }
 
         .userMessage {
@@ -148,6 +222,7 @@ watch(sessionIdFromRoute, updateItems, { immediate: true })
         }
 
         .aiMessage {
+          max-width: 70%;
         }
       }
     }
@@ -155,9 +230,10 @@ watch(sessionIdFromRoute, updateItems, { immediate: true })
 
   .inputBlock {
     position: relative;
-    display: flex;
-    gap: 12px;
     align-items: end;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
 
     border-radius: 12px;
     border: 1px solid var(--sidebar-border);
@@ -166,6 +242,41 @@ watch(sessionIdFromRoute, updateItems, { immediate: true })
     height: fit-content;
     padding: 20px;
     border: 1px solid var(--sidebar-border);
+
+    .header {
+      display: flex;
+      width: 100%;
+      gap: 12px;
+    }
+
+    .footer {
+      display: flex;
+      justify-content: start;
+      width: 100%;
+
+      .icon {
+        background-color: transparent;
+        cursor: pointer;
+        transition: 0.1s;
+        display: grid;
+        place-items: center;
+        border: 2px solid white;
+        padding: 8px;
+        border-radius: 50%;
+
+        &:hover {
+          scale: 1.06;
+        }
+
+        &:active {
+          scale: 0.95;
+        }
+
+        path {
+          stroke: white;
+        }
+      }
+    }
 
     .input {
       resize: vertical;
