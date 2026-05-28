@@ -26,6 +26,8 @@ async function postMessage(): Promise<void> {
     description: userInput.value
   })
 
+  userInput.value = ''
+
   await updateItems()
 }
 
@@ -152,6 +154,7 @@ watch(sessionIdFromRoute, updateItems, { immediate: true })
   }
 
   .inputBlock {
+    position: relative;
     display: flex;
     gap: 12px;
     align-items: end;
@@ -179,6 +182,7 @@ watch(sessionIdFromRoute, updateItems, { immediate: true })
 
 .logoContainer {
   position: absolute;
+  z-index: 0;
   inset: 0;
   display: grid;
   place-items: center;
@@ -193,10 +197,14 @@ watch(sessionIdFromRoute, updateItems, { immediate: true })
 }
 
 .opacity {
+  position: sticky;
   opacity: 40%;
+  bottom: 50%;
+  height: 0;
 
   .logo {
     width: 40%;
+    min-height: 100%;
     animation: pulse-mini 3s infinite ease-in-out;
   }
 }

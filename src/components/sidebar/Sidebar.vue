@@ -100,6 +100,8 @@ function logout(): void {
   transition: var(--sidebar--transition);
   border-right: 1px solid var(--sidebar-border);
   background-color: var(--sidebar-background);
+  position: relative;
+  z-index: 2;
 
   &[data-expand="true"] {
     max-width: var(--sidebar--width-expand);
