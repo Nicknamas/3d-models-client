@@ -90,7 +90,7 @@ async function postMessage(): Promise<void> {
       request
     })
 
-    if (response.statusText === "Need more money :D") {
+    if (response.status === 400) {
       useMessage({
         type: 'success',
         message: 'Пополните баланс',
